@@ -1,0 +1,86 @@
+package com.netshoes.inka.sample.drools.rules
+
+import com.netshoes.inka.sample.drools.facts.*;
+
+
+rule "Desconto para clientes Premium"
+	when
+		$result : DynamicShipping (eligibleDiscount == true)
+		$order : Order ( customerProfile == "PREMIUM" )
+	then
+		$result.addAppliedRule("Desconto para clientes Premium");
+		$result.addDiscount(-10);
+		System.out.println("Desconto para clientes Premium");
+end
+
+rule "Frete gratis na primeira compra"
+	when
+		$result : DynamicShipping (eligibleFreeShipping == true)
+		$order : Order ( customerProfile == "FIRST_TIME_BUYER" )
+	then
+		$result.addAppliedRule("Frete gratis na primeira compra");
+		$result.setFreeShipping(true);
+		System.out.println("Frete gratis na primeira compra");
+end
+
+rule "Cliente de São Paulo paga mais caro"
+	when
+		$result : DynamicShipping (eligibleOvercharge == true)
+		$order : Order( zipCode >= 4000000 && < 5000000 )
+	then
+		$result.addAppliedRule("Cliente de São Paulo paga mais caro");
+		$result.addDiscount(2);
+		System.out.println("Cliente de São Paulo paga mais caro");
+end
+
+rule "Frete Gratis"
+	when
+		$result : DynamicShipping (eligibleFreeShipping == true)
+		$order : Order ( subtotal > 100 )
+	then
+		$result.addAppliedRule("Frete Gratis");
+		$result.setFreeShipping(true);
+		System.out.println("Frete Gratis");
+end
+
+rule "SKU não eligível a promoção"
+salience 10
+	when
+		$result : DynamicShipping(eligibleFreeShipping == true)
+		$order : Order()
+		$item : Product() from $order.products
+		SkuList(skuList contains $item.getSkuCode())
+	then
+		System.out.println("SKU não eligível a promoções de frete: " + $item.getSkuCode());
+		modify($result) {
+			setEligibleFreeShipping(false),
+			setEligibleDiscount(true),
+			setEligibleOvercharge(true);
+		}
+end
+
+rule "Categoria não eligível a promoção"
+salience 10
+	when
+		$result : DynamicShipping(eligibleFreeShipping == true)
+		$order : Order()
+		$item : Product() from $order.products
+		CategoryList(categoryList contains $item.getCategoryCode())
+	then
+		System.out.println("Categoria não eligível a promoção: " + $item.getCategoryCode());
+		modify($result) {
+			setEligibleFreeShipping(false),
+			setEligibleDiscount(true),
+			setEligibleOvercharge(true);
+		}
+end
+
+/*
+rule "new rule"
+//no-loop
+//agenda-group "desconto"
+//salience 1
+	when
+	then
+end
+*/
